@@ -2712,9 +2712,10 @@ _make_appimage() {
 		pid=$!
 
 		sleep 10
-		pkill -P "$pid" || true
-		umount "$TMPDIR"/.mount_* || true
-		wait "$pid" || true
+		pkill -P "$(cat "$TMPDIR"/.mount_*.pid)" || :
+		pkill -P "$pid" || :
+		umount "$TMPDIR"/.mount_* || :
+		wait "$pid" || :
 		rm -f "$tmpappimage"
 	fi
 
