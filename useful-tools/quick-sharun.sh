@@ -1071,7 +1071,11 @@ _make_deployment_array() {
 			"$LIB_DIR"/libX11-xcb.so*        \
 			"$LIB_DIR"/libwayland-egl.so*    \
 			"$LIB_DIR"/libwayland-cursor.so* \
-			"$LIB_DIR"/libwayland-client.so*
+			"$LIB_DIR"/libwayland-client.so* \
+			"$LIB_DIR"/libnss_mymachines.so* \
+			"$LIB_DIR"/libnss_resolve.so*    \
+			"$LIB_DIR"/libnss_files.so*      \
+			"$LIB_DIR"/libnss_dns.so*
 	fi
 
 	# also pass all the files in the directories to add to lib4bin
