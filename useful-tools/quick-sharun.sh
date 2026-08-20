@@ -767,8 +767,7 @@ _make_deployment_array() {
 			"$LIB_DIR"/librt.so*      \
 			"$LIB_DIR"/libm.so*       \
 			"$LIB_DIR"/libutil.so*    \
-			"$LIB_DIR"/libresolv.so*  \
-			"$LIB_DIR"/libnsl.so*
+			"$LIB_DIR"/libresolv.so*
 		# nss libs, not all apps need this but it is very hard to determine this
 		set -- "$@" \
 			"$LIB_DIR"/libnss_dns.so*     \
@@ -787,7 +786,11 @@ _make_deployment_array() {
 			"$LIB_DIR"/gconv/CP*.so*      \
 			"$LIB_DIR"/gconv/LATIN*.so*   \
 			"$LIB_DIR"/gconv/UNICODE*.so* \
-			"$LIB_DIR"/gconv/ISO8859*.so*
+			"$LIB_DIR"/gconv/ISO8859*.so* \
+			"$LIB_DIR"/gconv/SJIS*.so*    \
+			"$LIB_DIR"/gconv/EUC-JP.so*   \
+			"$LIB_DIR"/gconv/EUC-KR.so*   \
+			"$LIB_DIR"/gconv/EUC-CN.so*
 	fi
 	if [ "$ALWAYS_SOFTWARE" = 1 ]; then
 		DEPLOY_OPENGL=0
@@ -855,7 +858,7 @@ _make_deployment_array() {
 
 		if [ "$DEPLOY_QT_WEB_ENGINE" = 1 ]; then
 			if ! enginebin=$(find "${QT_LOCATION:-$LIB_DIR}" -type f \
-			  -name 'QtWebEngineProcess' -print -quit 2>/dev/null); then
+			  -name 'QtWebEngineProcess' -print 2>/dev/null | head -n 1); then
 				_err_msg "Cannot find QtWebEngineProcess!"
 				exit 1
 			fi
@@ -1012,10 +1015,21 @@ _make_deployment_array() {
 	if [ "$DEPLOY_PIPEWIRE" = 1 ]; then
 		_echo "* Deploying pipewire"
 		DEPLOY_PULSE=${DEPLOY_PULSE:-1}
+		# only deploy what pipewire CLIENTS need
+		# filter-graph spa plugins are skipped on purpose: only effect hosts
+		# like carla need them, pass /spa-*/filter-graph/*.so* if that ever happens
 		set -- "$@" \
-			"$LIB_DIR"/pipewire-*/* \
-			"$LIB_DIR"/spa-*/*      \
-			"$LIB_DIR"/spa-*/*/*    \
+			"$LIB_DIR"/pipewire-*/*-module-adapter.so*            \
+			"$LIB_DIR"/pipewire-*/*-module-client-device.so*      \
+			"$LIB_DIR"/pipewire-*/*-module-client-node.so*        \
+			"$LIB_DIR"/pipewire-*/*-module-metadata.so*           \
+			"$LIB_DIR"/pipewire-*/*-module-protocol-native.so*    \
+			"$LIB_DIR"/pipewire-*/*-module-rt.so*                 \
+			"$LIB_DIR"/pipewire-*/*-module-session-manager.so*    \
+			"$LIB_DIR"/spa-*/audioconvert/libspa-audioconvert.so* \
+			"$LIB_DIR"/spa-*/support/libspa-dbus.so*              \
+			"$LIB_DIR"/spa-*/support/libspa-support.so*           \
+			"$LIB_DIR"/spa-*/videoconvert/libspa-videoconvert.so* \
 			"$LIB_DIR"/alsa-lib/*pipewire*.so*
 	fi
 	if [ "$DEPLOY_PULSE" = 1 ]; then
@@ -1106,7 +1120,7 @@ _make_deployment_array() {
 		# On ubuntu and alpine the gstreamer binaries are on a different dir
 		if [ ! -f "$GST_DIR"/gst-plugin-scanner ]; then
 			gst_bin_path=$(find /usr/lib* -type f \
-				-name 'gst-plugin-scanner' -print -quit)
+				-name 'gst-plugin-scanner' -print | head -n 1)
 			gst_bin_dir=${gst_bin_path%/*}
 			set -- "$@" \
 				"$gst_bin_dir"/gst*scanner \
@@ -1424,7 +1438,9 @@ _lib4bin_collect_strace() {
 		                                                     -e '/lib-dynload/d' \
 		                                                     -e '/_internal/d'   \
 		                                                     -e '/libncurses/d'  \
-		                                                     -e '/libcurses/d'
+		                                                     -e '/libcurses/d'   \
+		                                                     -e '/pipewire/d'    \
+		                                                     -e '/libspa/d'
 		)
 		rm -f "$dlopened"
 		[ -n "$out" ] || continue
@@ -1495,12 +1511,6 @@ _lib4bin_deploy_binaries() {
 				cp -fv "$b" "$dst"
 				chmod 755 "$dst"
 			fi
-			for i in python bash sh ash zsh fish dash perl ruby go node; do
-				if grep -qo "^#!.*bin/$i" "$dst"; then
-					sed -i "1s|^#!.*bin/$i|#!/usr/bin/env $i|" "$dst"
-					break
-				fi
-			done
 			continue
 		fi
 
@@ -1600,9 +1610,6 @@ _handle_bins_scripts() {
 		if ! head -c 20 "$s" | grep -q '#!.*sh'; then
 			continue
 		fi
-		# some very very old distros do not have /usr/bin/env
-		# so it is better to always use #!/bin/sh shebang instead
-		sed -i -e 's|/usr/bin/env sh|/bin/sh|' "$s"
 
 		# patch away hardcoded paths from dotnet scripts
 		if grep -q 'dotnet' "$s"; then
@@ -1610,6 +1617,26 @@ _handle_bins_scripts() {
 		fi
 	done
 
+}
+
+_fix_shebangs() {
+	while IFS="" read -r s; do
+		[ -x "$s" ]     || continue
+		_is_script "$s" || continue
+		for i in python bash sh ash zsh fish dash perl ruby go node; do
+			if grep -q "^#!.*bin/$i" "$s"; then
+				sed -i "1s|^#!.*bin/$i|#!/usr/bin/env $i|" "$s"
+				break
+			fi
+		done
+		# some very very old distros do not have /usr/bin/env, so for
+		# sh scripts it is better to always use #!/bin/sh instead
+		if grep -q '^#.*/usr/bin/env sh' "$s"; then
+			sed -i "1s|/usr/bin/env sh|/bin/sh|" "$s"
+		fi
+	done <<-EOF
+	$(find "$APPDIR"/ -type f ! -name '*.so*' -print 2>/dev/null)
+	EOF
 }
 
 _add_anylinux_lib() {
@@ -2020,7 +2047,12 @@ _deploy_locale() {
 					set -- "$@" ! -name "*$f*"
 				fi
 			done
-			find "$APPDIR"/share/locale "$@" \( -type f -o -type l \) -delete
+			# include the .desktop name since some projects use reversed
+			# dns naming for the .mo files which won't match the binary name
+			f=${DESKTOP_ENTRY##*/}
+			f=${f%.desktop}
+			set -- "$@" ! -name "*$f*"
+			find "$APPDIR"/share/locale "$@" \( -type f -o -type l \) -exec rm -f {} +
 			_remove_empty_dirs "$APPDIR"/share/locale
 		fi
 		echo ""
@@ -2119,6 +2151,33 @@ _add_bwrap_wrapper() {
 		chmod +x "$target"
 		_echo "* added sharun bwrap wrapper!"
 	fi
+}
+
+_fix_electron_libc_nonsense() {
+	[ "$DEPLOY_ELECTRON" = 1 ] || [ "$DEPLOY_CHROMIUM" = 1 ] || return 0
+	# electron apps may attempt to determine if the host has glibc or musl
+	# they do so by reading /usr/bin/ldd, /etc/alpine-release or exec `ldd --version`
+	#
+	# This causes apps to crash because they think their libc is musl when it is not
+	#
+	set -- $(find "$APPDIR"/ -type f \( -name 'app.asar' -o -name '*.js' \) -print 2>/dev/null)
+	for f do
+		_patched=""
+		[ -f "$f" ] || continue
+		# string has to be the same length
+		if grep -aq -m 1 '/usr/bin/ldd' "$f"; then _patched=1
+			sed -i -e 's|/usr/bin/ldd|/XXX/YYY/ZZZ|g' "$f"
+		fi
+		if grep -aq -m 1 'ldd --version' "$f"; then _patched=1
+			sed -i -e 's|ldd --version|___ --version|g' "$f"
+		fi
+		if grep -aq -m 1 '/etc/alpine-release' "$f"; then _patched=1
+			sed -i -e 's|/etc/alpine-release|/XXX/alpine-release|g' "$f"
+		fi
+		if [ "$_patched" = 1 ]; then
+			_echo "* patched away host libc detection from $f"
+		fi
+	done
 }
 
 _fix_cpython_ldconfig_mess() {
@@ -2386,7 +2445,7 @@ _sort_env_file() {
 
 _remove_static_libs() {
 	if [ "$KEEP_STATIC_LIBS" != 1 ]; then
-		find "$APPDIR"/lib*/ -type f -name '*.a' -delete || :
+		find "$APPDIR"/lib*/ -type f -name '*.a' -exec rm -f {} + || :
 		_echo "* removed static libraries"
 	fi
 }
@@ -2804,12 +2863,15 @@ _handle_nested_bins() {
 	done
 }
 
-# sometimes developers add stuff like /bin/sh or env as the Exec= key of the
-# desktop entry, 99.99% of the time this is not wanted, so we have to error that
-_check_main_bin() {
+# MAIN_BIN needs to be set early for DEBLOAT_PYTHON to work correctly
+_set_main_bin() {
 	if [ -z "$MAIN_BIN" ]; then
 		MAIN_BIN=$(awk -F'=| ' '/^Exec=/{print $2; exit}' "$DESKTOP_ENTRY" | tr -d "\"'")
 		MAIN_BIN=${MAIN_BIN##*/}
+
+		# sometimes developers add stuff like /bin/sh or env in the
+		# Exec= key of the desktop file, MAIN_BIN is derived from that
+		# 99.99% of the time this is not wanted, so error that
 		case "$MAIN_BIN" in
 			env|sh|bash)
 				_err_msg "Main binary is '$MAIN_BIN', it is unlikely you"
@@ -2820,7 +2882,9 @@ _check_main_bin() {
 				;;
 		esac
 	fi
+}
 
+_check_main_bin() {
 	if [ -f "$DST_BIN_DIR"/"$MAIN_BIN" ]; then
 		return 0
 	fi
@@ -2963,6 +3027,7 @@ esac
 _sanity_check
 _get_desktop
 _get_icon
+_set_main_bin
 
 _echo "------------------------------------------------------------"
 _echo "Starting deployment, checking if extra libraries need to be added..."
@@ -2991,7 +3056,7 @@ if [ "$DEPLOY_FLUTTER" = 1 ]; then
 	# flutter apps need to have a relative lib and data directory
 	# we need to find the directory that contains libapp.so
 	if libapp=$(cd "$DST_BIN_DIR" \
-	  && find ../lib/ -type f -name 'libapp.so' -print -quit); then
+	  && find ../lib/ -type f -name 'libapp.so' -print | head -n 1); then
 		d=${libapp%/*}
 		if [ ! -d "$DST_BIN_DIR"/"${d##*/}" ]; then
 			ln -s "$d" "$DST_BIN_DIR"/"${d##*/}"
@@ -3119,7 +3184,8 @@ for lib do case "$lib" in
 		_try_cp /usr/share/ghostscript "$APPDIR"/share/ghostscript
 		;;
 	*/gconv/*.so)
-		_try_cp "$LIB_DIR"/gconv/gconv-modules "$DST_LIB_DIR"/gconv/gconv-modules
+		_try_cp "$LIB_DIR"/gconv/gconv-modules   "$DST_LIB_DIR"/gconv/gconv-modules
+		_try_cp "$LIB_DIR"/gconv/gconv-modules.d "$DST_LIB_DIR"/gconv/gconv-modules.d
 		;;
 	*/libpipewire-*.so*)
 		_try_cp /usr/share/pipewire "$APPDIR"/share/pipewire
@@ -3138,7 +3204,7 @@ for lib do case "$lib" in
 		# sharun only checks for $SHARUN_DIR/share/file/misc/magic.mgc
 		# but on ubuntu for example, the file is located in /usr/share/file/magic.mgc
 		# so we need to find the magic.mgc file and copy it to dst
-		src_magic_file=$(find -L /usr/share/file -type f -name magic.mgc -print -quit) || :
+		src_magic_file=$(find -L /usr/share/file -type f -name magic.mgc -print | head -n 1) || :
 		dst_magic_file=$APPDIR/share/file/misc/magic.mgc
 		_try_cp "$src_magic_file" "$dst_magic_file"
 		;;
@@ -3160,6 +3226,9 @@ for lib do case "$lib" in
 		# apps may crash when the host has no mime database
 		_try_cp /usr/share/mime "$APPDIR"/share/mime
 		rm -rf "$APPDIR"/share/mime/packages # bloat
+		# only the compiled mime database (mime.cache/magic/globs) is read by apps
+		# the *.xml files are used to generate them via update-mime-database
+		find "$APPDIR"/share/mime -type f -name '*.xml' -exec rm -f {} + || :
 		;;
 	*/gdk-pixbuf-*/*/loaders/*.so*)
 		src_gdkpixbuf_cache=$(echo "$LIB_DIR"/gdk-pixbuf-*/*/loaders.cache)
@@ -3251,10 +3320,26 @@ for lib do case "$lib" in
 		src_qt_trans=/usr/share/$QT_DIR/translations
 		dst_qt_trans=$DST_LIB_DIR/$QT_DIR/translations
 		_try_cp "$src_qt_trans" "$dst_qt_trans"
-		# debloat a bit since we don't need all of them
-		rm -f "$dst_qt_trans"/assistant*.qm
-		rm -f "$dst_qt_trans"/designer*.qm
-		rm -f "$dst_qt_trans"/linguist*.qm
+		# remove translations that we do not need
+		for b in assistant designer linguist; do
+			[ -f "$SHARUN_BIN_DIR"/"$b" ] || rm -f "$dst_qt_trans"/"$b"*.qm
+		done
+		(
+			set -- "$DST_LIB_DIR"/libQt*Multimedia.so*
+			  [ -f "$1" ] || rm -f "$dst_qt_trans"/qtmultimedia*.qm
+			set -- "$DST_LIB_DIR"/libQt*WebEngineCore.so*
+			  [ -f "$1" ] || rm -f "$dst_qt_trans"/qtwebengine*.qm
+			set -- "$DST_LIB_DIR"/libQt*SerialPort.so*
+			  [ -f "$1" ] || rm -f "$dst_qt_trans"/qtserialport*.qm
+			set -- "$DST_LIB_DIR"/libQt*WebSockets.so*
+			  [ -f "$1" ] || rm -f "$dst_qt_trans"/qtwebsockets*.qm
+			set -- "$DST_LIB_DIR"/libQt*Qml.so* "$DST_LIB_DIR"/libQt*Quick.so*
+			  [ -f "$1" ] || [ -f "$2" ] || rm -f "$dst_qt_trans"/qtdeclarative*.qm
+			set -- "$DST_LIB_DIR"/libQt*Positioning.so* "$DST_LIB_DIR"/libQt*Location.so*
+			  [ -f "$1" ] || [ -f "$2" ] || rm -f "$dst_qt_trans"/qtlocation*.qm
+			set -- "$DST_LIB_DIR"/libQt*Bluetooth.so* "$DST_LIB_DIR"/libQt*Nfc.so*
+			  [ -f "$1" ] || [ -f "$2" ] || rm -f "$dst_qt_trans"/qtconnectivity*.qm
+		)
 		;;
 	*/libgirepository-*.so*)
 		_girver=$(echo "$lib" | awk -F'-' '{print $NF}' | sed "s|\.so.*||")
@@ -3289,8 +3374,17 @@ for lib do case "$lib" in
 		if [ ! -d "$dst_en_locale_dir" ] && _is_cmd localedef; then
 			mkdir -p /tmp/usr/lib/locale
 			localedef --prefix /tmp --no-archive -i en_US -f UTF-8 en_US.UTF-8 || :
-			if cp -r /tmp/usr/lib/locale/en_US.utf8 "$DST_LIB_DIR"/locale; then
+			if cp -r /tmp/usr/lib/locale/en_US.utf8/. "$dst_en_locale_dir"; then
 				_echo "* added en_US.UTF-8 locale"
+				# the LC_COLLATE from en_US.UTF-8 is massive (2.5 MiB)
+				# We can just replace it with the C LC_COLLATE file
+				# The bundled en_US.UTF-8 is only used as an emergency
+				# fallback for systems without glibc locales
+				src_collate_file=$DST_LIB_DIR/locale/C.utf8/LC_COLLATE
+				dst_collate_file=$dst_en_locale_dir/LC_COLLATE
+				if [ -f "$src_collate_file" ]; then
+					cp -f "$src_collate_file" "$dst_collate_file"
+				fi
 			fi
 		fi
 		;;
@@ -3467,6 +3561,7 @@ if [ -f "$a" ]; then
 	_echo "removed $a"
 fi
 
+_fix_electron_libc_nonsense
 _remove_static_libs
 _strip_bins_and_libs
 _check_hardcoded_lib_dirs
@@ -3584,6 +3679,7 @@ $ADD_DIR
 EOF
 
 _handle_nested_bins
+_fix_shebangs
 
 if [ -n "$ANYLINUX_DO_NOT_LOAD_LIBS" ]; then
 	echo "ANYLINUX_DO_NOT_LOAD_LIBS=$ANYLINUX_DO_NOT_LOAD_LIBS:\${ANYLINUX_DO_NOT_LOAD_LIBS}" >> "$APPENV"

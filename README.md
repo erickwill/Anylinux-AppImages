@@ -20,7 +20,6 @@ The uruntime [automatically falls back to using namespaces](https://github.com/V
 | Flatpak | **Hard dependency on bubblewrap and FUSE**. Must be supported by your distribution or be manually built and installed systemwide which requires elevated rights. |
 | Snap | Similar requirements to flatpak minus bubblewrap, has a **hard dependency on systemd**. |
 | **AnyLinux AppImages** (made with sharun) | Use **FUSE if available**, else **fallback to using namespaces** and if that is not possible then we automatically extract to `TMPDIR` and run with post cleanup, we **do not need an FHS filesystem** and **do not depend on the host libc**, so eh make sure you have write access to `/tmp`??? (If you can boot to a graphical session you already met those requirements). **How is this possible?** See: [How to guide](https://github.com/pkgforge-dev/Anylinux-AppImages/blob/main/HOW-TO-MAKE-THESE.md) |
-| **AnyLinux AppImages** (made with RunImage) | Similar to sharun AppImages but have a **Hard dependency on namespaces**, Lutris and virt-manager are the only ones that use this method, pending migration to sharun. |
 
 For more useful documentation about Anylinux-AppImages, see the pages below:
 
@@ -86,7 +85,7 @@ For more useful documentation about Anylinux-AppImages, see the pages below:
 | [ClassicImageViewer](https://github.com/pkgforge-dev/ClassicImageViewer-AppImage-Enhanced) |
 | [ClassiCube](https://github.com/pkgforge-dev/ClassiCube-AppImage) |
 | [Claude Code](https://github.com/pkgforge-dev/claude-code-AppImage) |
-| [Claude Desktop](https://github.com/pkgforge-dev/Claude-Desktop-AppImage) | 
+| [Claude Desktop](https://github.com/pkgforge-dev/Claude-Desktop-AppImage) |
 | [Claws Mail](https://github.com/pkgforge-dev/Claws-Mail-AppImage) |
 | [Clementine](https://github.com/pkgforge-dev/Clementine-AppImage) |
 | [Clock Signal](https://github.com/pkgforge-dev/CLK-AppImage) |
@@ -120,6 +119,7 @@ For more useful documentation about Anylinux-AppImages, see the pages below:
 | [dhewm3](https://github.com/pkgforge-dev/dhewm3-AppImage) |
 | [DiffPDF](https://github.com/pkgforge-dev/DiffPDF-AppImage) |
 | [Dillo](https://github.com/pkgforge-dev/Dillo-AppImage) |
+| [DingusPPC](https://github.com/pkgforge-dev/DingusPPC-AppImage) |
 | [Discord](https://github.com/pkgforge-dev/Discord-AppImage) |
 | [DNZHRecomp](https://github.com/pkgforge-dev/DNZHRecomp-AppImage) |
 | [Dolphin-emu](https://github.com/pkgforge-dev/Dolphin-emu-AppImage) |
@@ -183,6 +183,7 @@ For more useful documentation about Anylinux-AppImages, see the pages below:
 | [Gnome Text Editor](https://github.com/pkgforge-dev/Gnome-Text-Editor-AppImage) |
 | [Gnome Web](https://github.com/pkgforge-dev/Gnome-Web-AppImage) |
 | [GNU FreeDink](https://github.com/pkgforge-dev/GNU-FreeDink-AppImage) |
+| [GNU Octave](https://github.com/pkgforge-dev/GNU-Octave-AppImage) |
 | [Godot](https://github.com/pkgforge-dev/Godot-AppImage) |
 | [GoldenDict-ng](https://github.com/pkgforge-dev/GoldenDict-ng-AppImage) |
 | [Gopher64](https://github.com/pkgforge-dev/Gopher64-AppImage) |
@@ -211,6 +212,7 @@ For more useful documentation about Anylinux-AppImages, see the pages below:
 | [isle-portable](https://github.com/pkgforge-dev/isle-portable-AppImage-Enhanced) |
 | [ITGmania](https://github.com/pkgforge-dev/ITGmania-AppImage) |
 | [ITR2025](https://github.com/pkgforge-dev/ITR2025-AppImage) |
+| [ITR2026](https://github.com/pkgforge-dev/ITR2026-AppImage) |
 | [Joplin Desktop](https://github.com/pkgforge-dev/Joplin-Desktop-AppImage) |
 | [kaffeine](https://github.com/pkgforge-dev/kaffeine-AppImage) |
 | [KBlocks](https://github.com/pkgforge-dev/KBlocks-AppImage) |
@@ -240,7 +242,6 @@ For more useful documentation about Anylinux-AppImages, see the pages below:
 | [LMMS](https://github.com/pkgforge-dev/LMMS-AppImage-Enhanced) |
 | [LocalSend](https://github.com/pkgforge-dev/localsend-AppImage) |
 | [Luanti](https://github.com/pkgforge-dev/Luanti-AppImage) |
-| [Lutris](https://github.com/pkgforge-dev/Lutris-AppImage) |
 | [MAME](https://github.com/pkgforge-dev/MAME-AppImage) |
 | [ManiaDrive](https://github.com/pkgforge-dev/ManiaDrive-AppImage) |
 | [MarioKart64Recomp](https://github.com/pkgforge-dev/MarioKart64Recomp-AppImage) |
@@ -260,6 +261,7 @@ For more useful documentation about Anylinux-AppImages, see the pages below:
 | [NeoChat](https://github.com/pkgforge-dev/NeoChat-AppImage) |
 | [Nestopia](https://github.com/pkgforge-dev/Nestopia-AppImage) |
 | [Neverball](https://github.com/pkgforge-dev/Neverball-AppImage) |
+| [NewPipe](https://github.com/pkgforge-dev/NewPipe-AppImage) |
 | [NewsFlash](https://github.com/pkgforge-dev/NewsFlash-AppImage) |
 | [NFSIISE](https://github.com/pkgforge-dev/NFSIISE-AppImage) |
 | [Nitrogen](https://github.com/pkgforge-dev/Nitrogen-AppImage) |
@@ -363,6 +365,7 @@ For more useful documentation about Anylinux-AppImages, see the pages below:
 | [Secrets](https://github.com/pkgforge-dev/Secrets-AppImage) |
 | [servo](https://github.com/pkgforge-dev/servo-AppImage) |
 | [Shiru](https://github.com/pkgforge-dev/Shiru-AppImage) |
+| [SheepShaver](https://github.com/pkgforge-dev/SheepShaver-AppImage) |
 | [Shockolate](https://github.com/pkgforge-dev/Shockolate-AppImage) |
 | [Shotwell](https://github.com/pkgforge-dev/Shotwell-AppImage) |
 | [Signal](https://github.com/pkgforge-dev/Signal-AppImage-Enhanced) |
@@ -390,7 +393,6 @@ For more useful documentation about Anylinux-AppImages, see the pages below:
 | [Starfox64Recomp](https://github.com/pkgforge-dev/Starfox64Recomp-AppImage) |
 | [Stella](https://github.com/pkgforge-dev/Stella-AppImage) |
 | [stirling-pdf](https://github.com/pkgforge-dev/Stirling-PDF-AppImage) |
-| [Stoat](https://github.com/pkgforge-dev/Stoat-AppImage) |
 | [strawberry](https://github.com/pkgforge-dev/strawberry-AppImage) |
 | [Streamlink](https://github.com/pkgforge-dev/Streamlink-AppImage) |
 | [Super Mario War](https://github.com/pkgforge-dev/Supermariowar-AppImage) |
@@ -428,7 +430,6 @@ For more useful documentation about Anylinux-AppImages, see the pages below:
 | [Viber](https://github.com/pkgforge-dev/Viber-AppImage-Enhanced) |
 | [VICE](https://github.com/pkgforge-dev/VICE-AppImage) |
 | [Video Trimmer](https://github.com/pkgforge-dev/Video-Trimmer-AppImage) |
-| [virt-manager](https://github.com/pkgforge-dev/virt-manager-AppImage) |
 | [Visual Studio Code](https://github.com/pkgforge-dev/Visual-Studio-Code-AppImage) |
 | [VisualBoyAdvance-M](https://github.com/pkgforge-dev/VisualBoyAdvance-M-AppImage) |
 | [vokoscreenNG](https://github.com/pkgforge-dev/vokoscreenNG-AppImage) |
@@ -479,6 +480,7 @@ For more useful documentation about Anylinux-AppImages, see the pages below:
 | [PPSSPP](https://github.com/hrydgard/PPSSPP) |
 | [QDash](https://git.crueter.xyz/QFRC/QDash) |
 | [RSS Guard](https://github.com/martinrotter/rssguard) |
+| [Stoat](https://github.com/stoatchat/for-desktop) |
 | [ZapZap](https://github.com/rafatosta/zapzap) |
 
 ---

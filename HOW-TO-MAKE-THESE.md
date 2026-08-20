@@ -30,7 +30,7 @@ title: How To Make These
 
 ## *Quick Start Guide*
 
-**TL;DR:** Use `quick-sharun.sh` to bundle your application with all its dependencies into a truly portable AppImage that works on any Linux system.
+**TL;DR:** Use [quick-sharun.sh](https://github.com/pkgforge-dev/Anylinux-AppImages/blob/main/useful-tools/quick-sharun.sh) to bundle your application with all its dependencies into a truly portable AppImage that works on any Linux system. Start with this [template](https://github.com/pkgforge-dev/TEMPLATE-AppImage).
 
 -----------------------------------
 
@@ -57,7 +57,7 @@ You'll need:
 Creating an AppImage with quick-sharun involves these steps:
 
 1. **Install your application** and its dependencies on your build system
-2. **Download quick-sharun.sh** from this repository
+2. **Download [quick-sharun.sh](https://github.com/pkgforge-dev/Anylinux-AppImages/blob/main/useful-tools/quick-sharun.sh)** from this repository
 3. **Set environment variables** to configure `quick-sharun`
 4. **Run quick-sharun** with your application's binary (and libraries) path to deploy.
 5. **Generate the AppImage** with `--make-appimage` flag
@@ -372,7 +372,6 @@ Goes without saying that sharun handles all of this already on its own.
 See the ready-to-use demo scripts in [`useful-tools/demo/`](https://github.com/pkgforge-dev/Anylinux-AppImages/tree/main/useful-tools/demo):
 
 - [vkcube + glxgears](https://github.com/pkgforge-dev/Anylinux-AppImages/blob/main/useful-tools/demo/vkcube-glxgears-appimage.sh) - Bundles OpenGL and Vulkan test binaries
-- [zink vkcube + glxgears](https://github.com/pkgforge-dev/Anylinux-AppImages/blob/main/useful-tools/demo/zink-vkcube-glxgears-appimage.sh) - Same as above but using the Zink OpenGL-on-Vulkan driver
 - [gtk3-demo](https://github.com/pkgforge-dev/Anylinux-AppImages/blob/main/useful-tools/demo/gtk3-demo-appimage.sh) - Simple GTK3 application
 - [gtk4-demo](https://github.com/pkgforge-dev/Anylinux-AppImages/blob/main/useful-tools/demo/gtk4-demo-appimage.sh) - Simple GTK4 application
 - [gtk4-demo (software rendering)](https://github.com/pkgforge-dev/Anylinux-AppImages/blob/main/useful-tools/demo/gtk4-demo-onlysoftware-appimage.sh) - GTK4 demo using software-only rendering
