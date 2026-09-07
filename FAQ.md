@@ -40,12 +40,12 @@ title: Frequently Asked Questions
 # How come this only became possible in 2024?
 
 * For an application to be truly portable we need to ship our own dynamic linker (ld-linux.so).
-* It turns out it is not possible to have a relative dynamic linker with executables. 
+* It turns out it is not possible to have a relative dynamic linker with executables.
 * polyfill glibc attempted to [fix this issue](https://github.com/corsix/polyfill-glibc/blob/main/docs/Command_line_options.md#elf-interpreter---print-interpreter---set-interpreter) with an experimental tool that replaces `PT_INTERP` with `PT_LOAD` and has the payload look for the relative dynamic linker but this never got finished.
 * **We can execute the dynamic linker** first and then pass the binary to launch to bypass this limitation, **go-appimage had been doing this since ~2019.**
 * [But that runs into issues with `/proc/self/exe`](https://github.com/probonopd/go-appimage/issues/49).
 * [sharun](https://github.com/VHSgunzo/sharun) had to be made to fix the `/proc/self/exe` issues. And as far as I know, [brioche had been using the same approach before sharun as well](https://brioche.dev/blog/portable-dynamically-linked-packages-on-linux/).
-* Once all the pieces were ready, the next step was changing the way we deploy AppImages and sorting all the bugs that came with that, AppImage was originally made with the idea of relying on the host glibc and a set of libraries that always had to come from the host. 
+* Once all the pieces were ready, the next step was changing the way we deploy AppImages and sorting all the bugs that came with that, AppImage was originally made with the idea of relying on the host glibc and a set of libraries that always had to come from the host.
 
 # Why bundle glibc instead of musl?
 
@@ -71,7 +71,7 @@ We only use musl where it is very useful, that is when making static binaries.
 
 # Why not use [solo](https://github.com/pg83/solo) or [detour](https://github.com/graphitemaster/detour)?
 
-These solutions allow statically linked programs to dlopen host libraries, amazing no? Well that runs into several problems: 
+These solutions allow statically linked programs to dlopen host libraries, amazing no? Well that runs into several problems:
 
 * What happens if my application needs OpenGL 4.6 but the host Mesa only supports OpenGL 4.5? [Sadness.](https://github.com/PixelGuys/Cubyz/issues/2975#issuecomment-4315191567)
 * What happens if I end up statically linking LLVM and the host's Mesa links to a different version of LLVM? [More problems.](https://www.gfxstrand.net/faith/blog/2022/01/in-defense-of-nir/)
@@ -82,6 +82,18 @@ Using the host Mesa you are also going to run into bugs that had already been fi
 Also you are not forced to use our bundled drivers always, you can always set `USE_HOST_MESA_DRIVERS=1`, this will help if you plan to use the same AppImage several years into the future, but it is not guaranteed to work forever due to glibc symbol nonsense.
 
 We don't run into these problems with Nvidia, because Nvidia releases its proprietary driver linking to super old versions of glibc so you can be certain it will always work.
+
+---
+
+**UPDATE: We now have a similar feature via [cross-libc-dlopen](https://github.com/pkgforge-dev/cross-libc-dlopen)**, enabled via `USE_HOST_DRIVERS_EXPERIMENTAL=1` in `quick-sharun`.
+
+This feature is only going to be used if the applications meets the following conditions:
+
+* The application doesn't depend on a recent version of OpenGL. (A good test is checking if the application works with the `softpipe` driver since that only supports OpenGL 3.3)
+* The application does not have a hard dependency on vulkan. (Most vulkan apps require relative new versions of vulkan (1.2 or newer) which only began to show up in Mesa 20.0 ~Ubuntu 20.04).
+* The application has a fallback software renderer. Who knows what can happen in future, it is likely for example that OpenGL might not be installed by default anymore in the next decade and now we have applications that no longer work.
+
+---
 
 # Why DwarFS instead of SquashFS?
 
@@ -101,7 +113,7 @@ Because we use DwarFS instead of SquashFS, you need an AppImage thumbnailer that
 
 # I get `ERROR: Can't find a valid SQUASHFS superblock` in NixOS
 
-Once again this is because we use DwarFS instead of SquashFS, NixOS has something called `appimage-run` which lets you run old type appimages that need an FHS env and some host libraries, `appimage-run` manually mounts the appimage instead of letting it execute itself which results in that error since it expects it to be SquashFS. 
+Once again this is because we use DwarFS instead of SquashFS, NixOS has something called `appimage-run` which lets you run old type appimages that need an FHS env and some host libraries, `appimage-run` manually mounts the appimage instead of letting it execute itself which results in that error since it expects it to be SquashFS.
 
 **None of this is needed for our appimages, they run directly in NixOS, so all you have to do is disable `appimage-run`.**
 
@@ -109,7 +121,7 @@ Once again this is because we use DwarFS instead of SquashFS, NixOS has somethin
 
 Because it causes more issues than it solves.
 
-* `/usr` is the typical installation prefix for an application. 
+* `/usr` is the typical installation prefix for an application.
 
 * `$APPDIR/usr` makes no sense, it just causes projects to code exceptions for appimage that do something along these lines: `getenv(APPDIR)` + `usr` + `xyz`. Instead we make `APPDIR` the installation prefix directly. **This means we can take any application and patch away the `/usr` prefix for `$APPDIR` and make them portable without the need for projects to support AppImage.** Here are some examples where projects checking for `$APPDIR` just made things worse: [1](https://github.com/kem-a/AppManager/issues/41#issuecomment-3905238762) [2](https://github.com/pkgforge-dev/Anylinux-AppImages/issues/330#issuecomment-3939566890)
 
